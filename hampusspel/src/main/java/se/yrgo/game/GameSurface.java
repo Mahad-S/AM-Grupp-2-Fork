@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import se.yrgo.game.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -47,18 +48,18 @@ public class GameSurface extends JPanel implements KeyListener {
     private double velocity = 0;
     private double gravity = 0.2;
 
-    private int frameWidth = 17;
-    private int frameHeight = 12;
-    private int scale = 5;
+    private int frameWidth = 85;
+    private int frameHeight = 85;
+    private int scale = 1;
     private int drawWidth = frameWidth * scale; // 85
-    private int drawHeight = frameHeight * scale; // 60
+    private int drawHeight = frameHeight * scale; // 65
     private int offset = frameWidth * birbImageSpriteCount;
 
     private long lastPipeSpawnTime = 0;
     private static final int PIPE_SPAWN_INTERVAL = 2000;
 
     public GameSurface(final int width) {
-        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/birb.png")) {
+        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/witch.png")) {
             if (spriteStream == null) {
                 logger.log(Level.WARNING, "Unable to load image resource: /birb.png");
             } else {
@@ -82,7 +83,7 @@ public class GameSurface extends JPanel implements KeyListener {
         this.gameOver = false;
         this.pipes = new ArrayList<>();
         this.counters = new ArrayList<>();
-        this.birb = new Rectangle(500, 432, 85, 60);
+        this.birb = new Rectangle(500, 432, 85, 85);
         this.score = 0;
 
         this.updater = new FrameUpdater(this, 60);
@@ -136,17 +137,19 @@ public class GameSurface extends JPanel implements KeyListener {
         }
 
         // draw the bird
+        if(birbImageSprite != null){
+        int offset = 85 * birbImageSpriteCount;
         g.drawImage(
                 birbImageSprite,
                 birb.x,
                 birb.y,
-                birb.x + drawWidth,
-                birb.y + drawHeight,
+                birb.x + frameWidth,
+                birb.y + frameHeight,
                 offset,
                 0,
-                offset + frameWidth,
-                frameHeight,
+                offset + frameWidth, frameHeight,
                 null);
+        }
 
         // draw the score
         drawScore(g, d, false);
@@ -193,6 +196,10 @@ public class GameSurface extends JPanel implements KeyListener {
             // just return without updating any state
             return;
         }
+
+        birbImageSpriteCount = (time / 100) % 3;
+
+
 
         // spawns a pipe at the start of the game
         if (lastPipeSpawnTime == 0) {
