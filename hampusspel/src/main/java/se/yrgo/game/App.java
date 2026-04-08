@@ -14,7 +14,7 @@ public class App {
 
         GameSurface gs = new GameSurface(400);
 
-        main.setSize(1536, 864);
+        main.setSize(1472, 832);
         main.add(gs);
         main.addKeyListener(gs);
         main.setDefaultCloseOperation(EXIT_ON_CLOSE);
