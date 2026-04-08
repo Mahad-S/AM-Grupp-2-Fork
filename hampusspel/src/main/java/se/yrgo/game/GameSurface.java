@@ -280,13 +280,29 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         counters.add(new Counter(newTime, FAR_OFFSCREEN));
     }
 
+    private void restartGame() {
+        gameOver = false;
+        obstacles.clear();
+        counters.clear();
+
+        player = new Rectangle(500, 432, 85, 60);
+
+        jumpHeight = 0;
+        score = 0;
+        lastObstacleSpawnTime = -1;
+
+        updater = new FrameUpdater(this, 60);
+        updater.setDaemon(true);
+        updater.start();
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
         // this event triggers when we release a key and then
         // we will move the space ship if the game is not over yet
 
         if (gameOver) {
-            return;
+            restartGame();
         }
 
         final int kc = e.getKeyCode();
