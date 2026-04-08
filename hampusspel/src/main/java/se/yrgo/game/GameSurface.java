@@ -43,6 +43,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     // make some transient to get past boring serialization demands...
     private transient FrameUpdater updater;
     private boolean gameOver;
+    private boolean gameStarted;
     private transient List<Obstacle> obstacles;
     private transient List<Counter> counters;
     private Rectangle player;
@@ -57,10 +58,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
     private int playerWidth = 85;
     private int playerHeight = 85;
-    private int scale = 1;
-    private int drawWidth = playerWidth * scale; // 85
-    private int drawHeight = playerHeight * scale; // 60
-    private int offset = playerWidth * playerImageSpriteCount;
 
     private long lastObstacleSpawnTime = 0;
     private static final int OBSTACLE_SPAWN_INTERVAL = 2500;
@@ -89,6 +86,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         }
 
         this.gameOver = false;
+        this.gameStarted = false;
         this.obstacles = new ArrayList<>();
         this.counters = new ArrayList<>();
         this.player = new Rectangle(500, 432, 85, 60);
@@ -192,6 +190,10 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     public void update(int time) {
         if (gameOver) {
             updater.interrupt();
+            return;
+        }
+
+        if (!gameStarted) {
             return;
         }
 
@@ -306,6 +308,11 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         }
 
         final int kc = e.getKeyCode();
+
+        if (!gameStarted && kc == KeyEvent.VK_SPACE) {
+            gameStarted = true;
+            return;
+        }
 
         if (kc == KeyEvent.VK_SPACE) {
             jumpHeight = -7;
