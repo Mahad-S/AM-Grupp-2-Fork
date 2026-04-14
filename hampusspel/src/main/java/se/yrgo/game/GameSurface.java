@@ -1,21 +1,30 @@
 package se.yrgo.game;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import se.yrgo.game.*;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.JPanel;
 
 /**
  * A simple panel with a space invaders "game" in it. This is just to
@@ -27,45 +36,46 @@ import javax.swing.*;
  * game making out there which are much more suitable for this.
  * 
  */
-public class GameSurface extends JPanel implements KeyListener {
+public class GameSurface extends JPanel implements KeyListener, MouseListener {
+    private Highscore archive = new Highscore();
+    private ArrayList<Player> highscore = archive.loadScore("highscore.txt");
     private static final long serialVersionUID = 6260582674762246325L;
     private static Logger logger = Logger.getLogger(GameSurface.class.getName());
 
-    private static final double PIPE_PIXELS_PER_MS = 0.25;
+    private static final double OBSTACLE_PIXELS_PER_MS = 0.25;
 
     // make some transient to get past boring serialization demands...
     private transient FrameUpdater updater;
     private boolean gameOver;
-    private transient List<Pipe> pipes;
+    private boolean gameStarted;
+    private boolean once = true;
+    private transient List<Obstacle> obstacles;
     private transient List<Counter> counters;
-    private Rectangle birb;
-    private transient BufferedImage birbImageSprite;
-    private int birbImageSpriteCount;
+    private Rectangle player;
+    private transient BufferedImage playerImageSprite;
+    private int playerImageSpriteCount;
     private BufferedImage background;
 
     private int score;
 
-    private double velocity = 0;
-    private double gravity = 0.2;
+    private double jumpHeight = 0;
+    private double gravity = 0.3;
 
-    private int frameWidth = 85;
-    private int frameHeight = 85;
-    private int scale = 1;
-    private int drawWidth = frameWidth * scale; // 85
-    private int drawHeight = frameHeight * scale; // 65
-    private int offset = frameWidth * birbImageSpriteCount;
+    private int playerWidth = 85;
+    private int playerHeight = 85;
 
-    private long lastPipeSpawnTime = 0;
-    private static final int PIPE_SPAWN_INTERVAL = 2000;
+    private long lastObstacleSpawnTime = 0;
+    private static final int OBSTACLE_SPAWN_INTERVAL = 2500;
 
     public GameSurface(final int width) {
+
         try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/witch.png")) {
             if (spriteStream == null) {
-                logger.log(Level.WARNING, "Unable to load image resource: /birb.png");
+                logger.log(Level.WARNING, "Unable to load image resource: /witch.png");
             } else {
-                this.birbImageSprite = ImageIO.read(spriteStream);
+                this.playerImageSprite = ImageIO.read(spriteStream);
             }
-            this.birbImageSpriteCount = 0;
+            this.playerImageSpriteCount = 0;
         } catch (IOException ex) {
             logger.log(Level.WARNING, "Unable to load image resource: /birb.png", ex);
         }
@@ -81,10 +91,13 @@ public class GameSurface extends JPanel implements KeyListener {
         }
 
         this.gameOver = false;
-        this.pipes = new ArrayList<>();
+        this.gameStarted = false;
+        this.obstacles = new ArrayList<>();
         this.counters = new ArrayList<>();
-        this.birb = new Rectangle(500, 432, 85, 85);
+        this.player = new Rectangle(500, 432, 85, 60);
         this.score = 0;
+
+        this.addMouseListener(this);
 
         this.updater = new FrameUpdater(this, 60);
         this.updater.setDaemon(true); // it should not keep the app running
@@ -94,7 +107,6 @@ public class GameSurface extends JPanel implements KeyListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
 
         Graphics2D g2d = (Graphics2D) g;
         drawSurface(g2d);
@@ -110,6 +122,14 @@ public class GameSurface extends JPanel implements KeyListener {
         final Dimension d = this.getSize();
 
         if (gameOver) {
+            if(once){
+                Player player1 = new Player("Player 1", score/20);
+                highscore.add(player1);
+                Comparator myComparator = new SortByScore();
+                Collections.sort(highscore, myComparator);
+                archive.saveScore(highscore, "highscore.txt");
+                once = false;
+            }
             g.setColor(Color.red);
             g.fillRect(0, 0, d.width, d.height);
             g.setColor(Color.black);
@@ -120,43 +140,47 @@ public class GameSurface extends JPanel implements KeyListener {
         }
 
         // fill the background
-        //g.setColor(Color.CYAN);
-        //g.fillRect(0, 0, d.width, d.height);
-        g.drawImage(background, 0,0, null);
-
+        // g.setColor(Color.CYAN);
+        // g.fillRect(0, 0, d.width, d.height);
+        g.drawImage(background, 0, 0, null);
+        g.drawImage(background, 1472, 0, null);
 
         // draw the pipe
-        for (Pipe pipe : pipes) {
-            g.setColor(Color.GREEN);
-            g.fillRect(pipe.bounds.x, pipe.bounds.y, pipe.bounds.width, pipe.bounds.height);
-
-            // draw the outline
-            g.setColor(Color.BLACK);
-            g.setStroke(new BasicStroke(5)); // thickness
-            g.drawRect(pipe.bounds.x, pipe.bounds.y, pipe.bounds.width, pipe.bounds.height);
+        for (Obstacle obstacle : obstacles) {
+            drawObstacle(g, obstacle);
         }
 
         // draw the bird
-        if(birbImageSprite != null){
-        int offset = 85 * birbImageSpriteCount;
-        g.drawImage(
-                birbImageSprite,
-                birb.x,
-                birb.y,
-                birb.x + frameWidth,
-                birb.y + frameHeight,
-                offset,
-                0,
-                offset + frameWidth, frameHeight,
-                null);
+        if (playerImageSprite != null) {
+            int offset = 85 * playerImageSpriteCount;
+            g.drawImage(
+                    playerImageSprite,
+                    player.x,
+                    player.y,
+                    player.x + playerWidth,
+                    player.y + playerHeight,
+                    offset,
+                    0,
+                    offset + playerWidth, playerHeight,
+                    null);
         }
 
         // draw the score
         drawScore(g, d, false);
     }
 
+    private void drawObstacle(Graphics2D g, Obstacle obstacle) {
+        g.setColor(Color.BLUE);
+        g.fillRect(obstacle.bounds.x, obstacle.bounds.y, obstacle.bounds.width, obstacle.bounds.height);
+
+        // draw the outline
+        g.setColor(Color.BLACK);
+        g.setStroke(new BasicStroke(5)); // thickness
+        g.drawRect(obstacle.bounds.x, obstacle.bounds.y, obstacle.bounds.width, obstacle.bounds.height);
+    }
+
     private void drawScore(Graphics2D g, Dimension d, boolean gameOverBackground) {
-        final String scoreText = String.valueOf(score/20);
+        final String scoreText = String.valueOf(score / 20);
         final Font scoreFont = new Font("Monospaced", Font.BOLD, 100);
 
         g.setFont(scoreFont);
@@ -182,11 +206,16 @@ public class GameSurface extends JPanel implements KeyListener {
             return;
         }
 
-        velocity += gravity;
-        birb.y += velocity;
-        if(birb.y < 0)
-            birb.y = 0;
-        else if (birb.y > 750) {
+        if (!gameStarted) {
+            return;
+        }
+
+        jumpHeight += gravity;
+        player.y += jumpHeight;
+
+        if (player.y < 0)
+            player.y = 0;
+        else if (player.y > 850) {
             gameOver = true;
         }
 
@@ -197,79 +226,90 @@ public class GameSurface extends JPanel implements KeyListener {
             return;
         }
 
-        birbImageSpriteCount = (time / 100) % 3;
-
-
+        playerImageSpriteCount = (time / 100) % 3;
 
         // spawns a pipe at the start of the game
-        if (lastPipeSpawnTime == 0) {
-            lastPipeSpawnTime = time - PIPE_SPAWN_INTERVAL;
+        if (lastObstacleSpawnTime == 0) {
+            lastObstacleSpawnTime = time - OBSTACLE_SPAWN_INTERVAL;
         }
 
         // contineusly spawn pipes every other second
-        if (time - lastPipeSpawnTime >= PIPE_SPAWN_INTERVAL) {
-            addPipe(time, d.height);
+        if (time - lastObstacleSpawnTime >= OBSTACLE_SPAWN_INTERVAL) {
+            addObstacle(time, d.height);
             addCounter(time);
-            lastPipeSpawnTime = time;
+            lastObstacleSpawnTime = time;
         }
 
-        // add 1 point every other second, after a 2 second delay
-        //score = (int) (((time - 2200) / 1000.0) * SCORE_PER_SECOND);
+        manageObstacles(time, d);
+        manageCounters(time, d);
+    }
 
-        final List<Pipe> toRemove = new ArrayList<>();
-        final List <Counter> toRemoveCounter = new ArrayList<>();
-
-        for (Pipe pipe : pipes) {
-            // movement is based on elapsed time to make it smoother and
-            // more consistent over different computers
-            int timeElapsed = time - pipe.timeCreated;
-            pipe.bounds.x = (int) (d.width - (timeElapsed * PIPE_PIXELS_PER_MS));
-            if (pipe.bounds.x + pipe.bounds.width < 0) {
-                // we add to another list and remove later
-                // to avoid concurrent modification in a for-each loop
-                toRemove.add(pipe);
+    private void manageObstacles(int time, final Dimension d) {
+        final List<Obstacle> toRemoveObstacle = new ArrayList<>();
+        for (Obstacle obstacle : obstacles) {
+            int timeElapsed = time - obstacle.timeCreated;
+            obstacle.bounds.x = (int) (d.width - (timeElapsed * OBSTACLE_PIXELS_PER_MS));
+            if (obstacle.bounds.x + obstacle.bounds.width < 0) {
+                toRemoveObstacle.add(obstacle);
             }
 
-            if (pipe.bounds.intersects(birb)) {
+            if (obstacle.bounds.intersects(player)) {
                 gameOver = true;
             }
         }
+        obstacles.removeAll(toRemoveObstacle);
+    }
+
+    private void manageCounters(int time, final Dimension d) {
+        final List<Counter> toRemoveCounter = new ArrayList<>();
         for (Counter counter : counters) {
             int timeElapsed = time - counter.timeCreated;
-            counter.bounds.x = (int) (d.width - (timeElapsed * PIPE_PIXELS_PER_MS)+150);
-            if (counter.bounds.x + counter.bounds.width < 0){
+            counter.bounds.x = (int) (d.width - (timeElapsed * OBSTACLE_PIXELS_PER_MS) + 150);
+            if (counter.bounds.x + counter.bounds.width < 0) {
                 toRemoveCounter.add(counter);
             }
 
-            if (counter.bounds.intersects(birb)) {
+            if (counter.bounds.intersects(player)) {
                 score = score + 1;
             }
         }
-
-        // remove all pipes that are out of frame
-        pipes.removeAll(toRemove);
         counters.removeAll(toRemoveCounter);
     }
 
-    private void addPipe(final int time, final int height) {
+    private void addObstacle(final int time, final int height) {
         int newTime = time;
         final int FAR_OFFSCREEN = 9000;
 
         // the position of the upper pipe
         int y1 = ThreadLocalRandom.current().nextInt(-400, height - 900);
-        pipes.add(new Pipe(newTime, FAR_OFFSCREEN, y1));
+        obstacles.add(new Obstacle(newTime, FAR_OFFSCREEN, y1));
 
         // and the lower one
         int y2 = y1 + 800;
-        pipes.add(new Pipe(newTime, FAR_OFFSCREEN, y2));
+        obstacles.add(new Obstacle(newTime, FAR_OFFSCREEN, y2));
     }
+
     private void addCounter(final int time) {
         int newTime = time;
-        final int spawnPoint = 9300;
-        counters.add(new Counter(newTime, spawnPoint));
+        final int FAR_OFFSCREEN = 9300;
+        counters.add(new Counter(newTime, FAR_OFFSCREEN));
+    }
 
+    private void restartGame() {
+        gameOver = false;
+        once = true;
+        obstacles.clear();
+        counters.clear();
 
+        player = new Rectangle(500, 432, 85, 60);
 
+        jumpHeight = 0;
+        score = 0;
+        lastObstacleSpawnTime = -1;
+
+        updater = new FrameUpdater(this, 60);
+        updater.setDaemon(true);
+        updater.start();
     }
 
     @Override
@@ -278,13 +318,32 @@ public class GameSurface extends JPanel implements KeyListener {
         // we will move the space ship if the game is not over yet
 
         if (gameOver) {
-            return;
+            restartGame();
         }
 
         final int kc = e.getKeyCode();
 
+        if (!gameStarted && kc == KeyEvent.VK_SPACE) {
+            gameStarted = true;
+            return;
+        }
+
         if (kc == KeyEvent.VK_SPACE) {
-            velocity = -6;
+            jumpHeight = -7;
+        }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
+        if (gameOver) {
+            return;
+        }
+
+        final int b = e.getButton();
+
+        if (b == MouseEvent.BUTTON1) {
+            jumpHeight = -7;
         }
     }
 
@@ -295,6 +354,26 @@ public class GameSurface extends JPanel implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
+        // do nothing
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        // do nothing
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        // do nothing
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+        // do nothing
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
         // do nothing
     }
 }
