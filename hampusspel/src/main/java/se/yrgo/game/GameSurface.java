@@ -16,6 +16,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
@@ -35,6 +37,8 @@ import javax.swing.JPanel;
  * 
  */
 public class GameSurface extends JPanel implements KeyListener, MouseListener {
+    private Highscore archive = new Highscore();
+    private ArrayList<Player> highscore = archive.loadScore("highscore.txt");
     private static final long serialVersionUID = 6260582674762246325L;
     private static Logger logger = Logger.getLogger(GameSurface.class.getName());
 
@@ -44,6 +48,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private transient FrameUpdater updater;
     private boolean gameOver;
     private boolean gameStarted;
+    private boolean once = true;
     private transient List<Obstacle> obstacles;
     private transient List<Counter> counters;
     private Rectangle player;
@@ -117,6 +122,14 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         final Dimension d = this.getSize();
 
         if (gameOver) {
+            if(once){
+                Player player1 = new Player("Player 1", score/20);
+                highscore.add(player1);
+                Comparator myComparator = new SortByScore();
+                Collections.sort(highscore, myComparator);
+                archive.saveScore(highscore, "highscore.txt");
+                once = false;
+            }
             g.setColor(Color.red);
             g.fillRect(0, 0, d.width, d.height);
             g.setColor(Color.black);
@@ -284,6 +297,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
     private void restartGame() {
         gameOver = false;
+        once = true;
         obstacles.clear();
         counters.clear();
 
