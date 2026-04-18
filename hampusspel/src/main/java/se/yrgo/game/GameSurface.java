@@ -64,7 +64,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private int playerWidth = 85;
     private int playerHeight = 85;
 
-
     private long lastObstacleSpawnTime = 0;
     private static final int OBSTACLE_SPAWN_INTERVAL = 2500;
 
@@ -121,8 +120,8 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
      */
     private void drawSurface(Graphics2D g) {
         final Dimension d = this.getSize();
-        
-        if (!gameStarted) {        
+
+        if (!gameStarted) {
             g.setColor(Color.BLACK);
             g.fillRect(0, 0, d.width, d.height);
 
@@ -139,14 +138,18 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
             g.setFont(new Font("Arial", Font.BOLD, 40));
             g.setColor(Color.WHITE);
-            g.drawString("High Score: " + highScore, 25, 100);
+            int highScoreValue = 0;
+            if (!highscore.isEmpty()) {
+                highScoreValue = highscore.get(0).getScore(); // assuming sorted list
+            }
+            g.drawString("High Score: " + highScoreValue, 25, 100);
 
             return;
-        } 
+        }
 
         if (gameOver) {
-            if(once){
-                Player player1 = new Player("Player 1", score/20);
+            if (once) {
+                Player player1 = new Player("Player 1", score / 20);
                 highscore.add(player1);
                 Comparator myComparator = new SortByScore();
                 Collections.sort(highscore, myComparator);
@@ -162,9 +165,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             return;
         }
 
-        // fill the background
-        // g.setColor(Color.CYAN);
-        // g.fillRect(0, 0, d.width, d.height);
         g.drawImage(background, 0, 0, null);
         g.drawImage(background, 1472, 0, null);
 
@@ -230,10 +230,8 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         }
 
         if (!gameStarted) {
-            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                gameStarted = true;
-            }
             return;
+        }
 
         jumpHeight += gravity;
         player.y += jumpHeight;
@@ -267,8 +265,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
         manageObstacles(time, d);
         manageCounters(time, d);
-    }
-
     }
 
     private void manageObstacles(int time, final Dimension d) {

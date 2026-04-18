@@ -3,4 +3,5 @@ AAA///999
 CCC///888
 David///400
 BBB///111
+Player 1///1
 Loser///0
