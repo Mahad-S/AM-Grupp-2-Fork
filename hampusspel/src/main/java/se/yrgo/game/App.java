@@ -14,7 +14,7 @@ public class App {
 
         GameSurface gs = new GameSurface(400);
 
-        main.setSize(1472, 832);
+        main.setExtendedState(JFrame.MAXIMIZED_BOTH);
         main.add(gs);
         main.addKeyListener(gs);
         main.setDefaultCloseOperation(EXIT_ON_CLOSE);

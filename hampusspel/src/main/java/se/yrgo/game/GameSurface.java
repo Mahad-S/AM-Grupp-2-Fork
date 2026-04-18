@@ -53,6 +53,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private transient List<Counter> counters;
     private Rectangle player;
     private transient BufferedImage playerImageSprite;
+    private transient BufferedImage obstacleImageSprite;
     private int playerImageSpriteCount;
     private BufferedImage background;
 
@@ -78,6 +79,15 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             this.playerImageSpriteCount = 0;
         } catch (IOException ex) {
             logger.log(Level.WARNING, "Unable to load image resource: /birb.png", ex);
+        }
+        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/tree.png")) {
+            if (spriteStream == null) {
+                logger.log(Level.WARNING, "Unable to load image resource: /tree.png");
+            } else {
+                this.obstacleImageSprite = ImageIO.read(spriteStream);
+            }
+        } catch (IOException ex) {
+            logger.log(Level.WARNING, "Unable to load image resource: /tree.png", ex);
         }
 
         try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/forest.jpg")) {
@@ -193,13 +203,12 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     }
 
     private void drawObstacle(Graphics2D g, Obstacle obstacle) {
-        g.setColor(Color.BLUE);
-        g.fillRect(obstacle.bounds.x, obstacle.bounds.y, obstacle.bounds.width, obstacle.bounds.height);
-
-        // draw the outline
-        g.setColor(Color.BLACK);
-        g.setStroke(new BasicStroke(5)); // thickness
-        g.drawRect(obstacle.bounds.x, obstacle.bounds.y, obstacle.bounds.width, obstacle.bounds.height);
+        g.drawImage(obstacleImageSprite,
+                obstacle.bounds.x,
+                obstacle.bounds.y,
+                obstacle.bounds.width,
+                obstacle.bounds.height,
+                null);
     }
 
     private void drawScore(Graphics2D g, Dimension d, boolean gameOverBackground) {
@@ -348,6 +357,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
         if (!gameStarted && kc == KeyEvent.VK_SPACE) {
             gameStarted = true;
+            jumpHeight = -7;
             return;
         }
 
