@@ -7,6 +7,7 @@ import java.awt.Rectangle;
 public class Counter {
     public final int timeCreated;
     public final Rectangle bounds;
+    public boolean counted = false;
 
     public Counter(int created, int x) {
         this.timeCreated = created;

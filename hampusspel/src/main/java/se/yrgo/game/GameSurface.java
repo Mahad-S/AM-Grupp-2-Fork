@@ -1,6 +1,5 @@
 package se.yrgo.game;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -38,6 +37,7 @@ import javax.swing.JPanel;
  */
 public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private Highscore archive = new Highscore();
+    private SoundPlayer sound = new SoundPlayer();
     private ArrayList<Player> highscore = archive.loadScore("highscore.txt");
     private static final long serialVersionUID = 6260582674762246325L;
     private static Logger logger = Logger.getLogger(GameSurface.class.getName());
@@ -249,6 +249,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             player.y = 0;
         else if (player.y > 850) {
             gameOver = true;
+            sound.playSound("/witchlaugh.wav");
         }
 
         final Dimension d = getSize();
@@ -265,7 +266,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             lastObstacleSpawnTime = time - OBSTACLE_SPAWN_INTERVAL;
         }
 
-        // contineusly spawn pipes every other second
+        // contineusly spawn pipes every 2.5 seconds
         if (time - lastObstacleSpawnTime >= OBSTACLE_SPAWN_INTERVAL) {
             addObstacle(time, d.height);
             addCounter(time);
@@ -287,6 +288,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
             if (obstacle.bounds.intersects(player)) {
                 gameOver = true;
+                sound.playSound("/witchlaugh.wav");
             }
         }
         obstacles.removeAll(toRemoveObstacle);
@@ -302,7 +304,12 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             }
 
             if (counter.bounds.intersects(player)) {
-                score = score + 1;
+                score++;
+            }
+
+            if (counter.bounds.x <= player.x && !counter.counted) {
+                sound.playSound("/score.wav");
+                counter.counted = true;
             }
         }
         counters.removeAll(toRemoveCounter);
@@ -358,11 +365,13 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         if (!gameStarted && kc == KeyEvent.VK_SPACE) {
             gameStarted = true;
             jumpHeight = -7;
+            sound.playSound("/jump.wav");
             return;
         }
 
         if (kc == KeyEvent.VK_SPACE) {
             jumpHeight = -7;
+            sound.playSound("/jump.wav");
         }
     }
 
@@ -377,6 +386,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
         if (b == MouseEvent.BUTTON1) {
             jumpHeight = -7;
+            sound.playSound("/jump.wav");
         }
     }
 
