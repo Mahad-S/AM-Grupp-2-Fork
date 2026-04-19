@@ -335,10 +335,15 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     }
 
     private void restartGame() {
+        Dimension d = getSize();
+
         gameOver = false;
         once = true;
         obstacles.clear();
         counters.clear();
+
+        addObstacle(0, d.height);
+        addCounter(0);
 
         player = new Rectangle(500, 432, 85, 60);
 
