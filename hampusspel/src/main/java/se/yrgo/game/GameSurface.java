@@ -417,6 +417,10 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
 
         final int kc = e.getKeyCode();
+
+        if (kc == KeyEvent.VK_ESCAPE) {
+             System.exit(0);
+}
         char key = e.getKeyChar();
         //if(!inputname && kc != KeyEvent.VK_SPACE) {
         //playerName = playerName + e.getKeyChar();
