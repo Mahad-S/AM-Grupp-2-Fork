@@ -15,6 +15,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 
 /**
@@ -28,8 +31,6 @@ import javax.swing.*;
  *
  */
 public class GameSurface extends JPanel implements KeyListener, MouseListener {
-    private JTextField input;
-    private JButton button;
     private Highscore archive = new Highscore();
     private SoundPlayer sound = new SoundPlayer();
     private ArrayList<Player> highscore;
@@ -178,6 +179,10 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             int newLine = g.getFont().getSize() + 5;
             int highScoreValue = 0;
             int y = 100;
+            Player bestPlayer = highscore.get(0);
+            if (!highscore.isEmpty()) {
+                highScoreValue = highscore.get(0).getScore(); // assuming sorted list
+            }
             g.drawString("High Score:", 25, y);
             for(int i=0;i<highscore.size();i++){
                 if(i<10) {
