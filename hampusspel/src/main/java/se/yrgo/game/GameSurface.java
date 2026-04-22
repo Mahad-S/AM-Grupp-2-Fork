@@ -3,6 +3,7 @@ package se.yrgo.game;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -14,6 +15,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 
 /**
@@ -54,6 +58,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private BufferedImage gameOverBackground;
     private boolean inputname=false;
     private String playerName = "";
+    private String musicPath = "src\\main\\resources\\genesis-pulse.wav";
 
     private int score;
 
@@ -502,4 +507,5 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     public void mouseExited(MouseEvent e) {
         // do nothing
     }
+
 }

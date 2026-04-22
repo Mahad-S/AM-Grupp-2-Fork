@@ -5,5 +5,5 @@ David///400
 BBB///111
 David///4
 ddd///3
-David///1
 Loser///0
+david///0
