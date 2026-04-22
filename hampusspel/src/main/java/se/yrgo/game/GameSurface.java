@@ -33,7 +33,7 @@ import javax.swing.*;
 public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private Highscore archive = new Highscore();
     private SoundPlayer sound = new SoundPlayer();
-    private ArrayList<Player> highscore;
+    private ArrayList<Player> highscore = new ArrayList<>();
     private static final long serialVersionUID = 6260582674762246325L;
     private static Logger logger = Logger.getLogger(GameSurface.class.getName());
 
@@ -177,12 +177,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             g.setFont(new Font("Arial", Font.BOLD, 40));
             g.setColor(Color.WHITE);
             int newLine = g.getFont().getSize() + 5;
-            int highScoreValue = 0;
             int y = 100;
-            Player bestPlayer = highscore.get(0);
-            if (!highscore.isEmpty()) {
-                highScoreValue = highscore.get(0).getScore(); // assuming sorted list
-            }
             g.drawString("High Score:", 25, y);
             for(int i=0;i<highscore.size();i++){
                 if(i<10) {

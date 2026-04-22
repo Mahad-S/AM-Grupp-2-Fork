@@ -1,0 +1,11 @@
+se\yrgo\game\BackgroundPanel.class
+se\yrgo\game\Counter.class
+se\yrgo\game\Highscore.class
+se\yrgo\game\SortByScore.class
+se\yrgo\game\Obstacle.class
+se\yrgo\game\FrameUpdater.class
+se\yrgo\game\Player.class
+se\yrgo\game\SoundPlayer.class
+se\yrgo\game\GameSurface.class
+se\yrgo\game\Pipe.class
+se\yrgo\game\App.class
