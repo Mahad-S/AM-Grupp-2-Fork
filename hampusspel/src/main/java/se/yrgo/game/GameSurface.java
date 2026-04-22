@@ -15,9 +15,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 import javax.swing.*;
 
 /**
@@ -35,7 +32,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private JButton button;
     private Highscore archive = new Highscore();
     private SoundPlayer sound = new SoundPlayer();
-    private ArrayList<Player> highscore = archive.loadScore("score.txt");
+    private ArrayList<Player> highscore;
     private static final long serialVersionUID = 6260582674762246325L;
     private static Logger logger = Logger.getLogger(GameSurface.class.getName());
 
@@ -58,7 +55,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private BufferedImage gameOverBackground;
     private boolean inputname=false;
     private String playerName = "";
-    private String musicPath = "src\\main\\resources\\genesis-pulse.wav";
+    private File highScoreFile = new File("src\\main\\resources\\highscore.txt");
 
     private int score;
 
@@ -72,7 +69,13 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private static final int OBSTACLE_SPAWN_INTERVAL = 2500;
 
     public GameSurface(final int width) {
+        try{
+            highScoreFile.createNewFile();
 
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Unable to read or access high score");
+        }
+        highscore = archive.loadScore("highscore.txt");
         try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/witch.png")) {
             if (spriteStream == null) {
                 logger.log(Level.WARNING, "Unable to load image resource: /witch.png");
@@ -175,10 +178,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             int newLine = g.getFont().getSize() + 5;
             int highScoreValue = 0;
             int y = 100;
-            Player bestPlayer = highscore.get(0);
-            if (!highscore.isEmpty()) {
-                highScoreValue = highscore.get(0).getScore(); // assuming sorted list
-            }
             g.drawString("High Score:", 25, y);
             for(int i=0;i<highscore.size();i++){
                 if(i<10) {
