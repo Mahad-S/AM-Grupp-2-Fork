@@ -15,9 +15,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 import javax.swing.*;
 
 /**
@@ -45,6 +42,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private boolean gameStarted;
     private boolean once = true;
     private boolean showMenu = true;
+    private boolean pause = true;
     private transient List<Obstacle> obstacles;
     private transient List<Counter> counters;
     private Rectangle player;
@@ -146,7 +144,11 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         super.paintComponent(g);
 
         Graphics2D g2d = (Graphics2D) g;
-        drawSurface(g2d);
+        try {
+            drawSurface(g2d);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -155,7 +157,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
      *
      * @param g the graphics to paint on
      */
-    private void drawSurface(Graphics2D g) {
+    private void drawSurface(Graphics2D g) throws InterruptedException {
         final Dimension d = this.getSize();
 
 
@@ -200,6 +202,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         }
 
         if (gameOver) {
+            Thread.sleep(50);
             if (once) {
                 Player player1 = new Player(playerName, score / 20);
                 highscore.add(player1);
@@ -230,14 +233,17 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
 
 
-
         g.drawImage(background, 0, 0, null);
         g.drawImage(background, 1472, 0, null);
+
+
 
         // draw the pipe
         for (Obstacle obstacle : obstacles) {
             drawObstacle(g, obstacle);
         }
+
+
 
         // draw the bird
         if (playerImageSprite != null) {
@@ -254,8 +260,18 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
                     null);
         }
 
+        if(pause){
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 36));
+            g.drawString("Press SPACE to jump!", 600, 300);
+        }
+
         // draw the score
-        drawScore(g, d, false);
+        if(!pause){
+            drawScore(g, d, false);
+        }
+
+
 
 
     }
@@ -289,7 +305,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         g.drawString(scoreText, x, y);
     }
 
-    public void update(int time) {
+    public void update(int time) throws InterruptedException {
         if (gameOver) {
             updater.interrupt();
             return;
@@ -298,40 +314,43 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         if (!gameStarted) {
             return;
         }
+        if(!pause){
+            jumpHeight += gravity;
+            player.y += jumpHeight;
 
-        jumpHeight += gravity;
-        player.y += jumpHeight;
+            if (player.y < 0)
+                player.y = 0;
+            else if (player.y > 850) {
+                gameOver = true;
+                sound.playSound("/witchlaugh.wav");
+            }
 
-        if (player.y < 0)
-            player.y = 0;
-        else if (player.y > 850) {
-            gameOver = true;
-            sound.playSound("/witchlaugh.wav");
+            final Dimension d = getSize();
+            if (d.height <= 0 || d.width <= 0) {
+                // if the panel has not been placed properly in the frame yet
+                // just return without updating any state
+                return;
+            }
+
+            playerImageSpriteCount = (time / 100) % 3;
+
+            // spawns a pipe at the start of the game
+            if (lastObstacleSpawnTime == 0) {
+                lastObstacleSpawnTime = time - OBSTACLE_SPAWN_INTERVAL;
+            }
+
+            // contineusly spawn pipes every 2.5 seconds
+            if (time - lastObstacleSpawnTime >= OBSTACLE_SPAWN_INTERVAL) {
+                addObstacle(time, d.height);
+                addCounter(time);
+                lastObstacleSpawnTime = time;
+            }
+            manageObstacles(time, d);
+            manageCounters(time, d);
+
         }
 
-        final Dimension d = getSize();
-        if (d.height <= 0 || d.width <= 0) {
-            // if the panel has not been placed properly in the frame yet
-            // just return without updating any state
-            return;
-        }
 
-        playerImageSpriteCount = (time / 100) % 3;
-
-        // spawns a pipe at the start of the game
-        if (lastObstacleSpawnTime == 0) {
-            lastObstacleSpawnTime = time - OBSTACLE_SPAWN_INTERVAL;
-        }
-
-        // contineusly spawn pipes every 2.5 seconds
-        if (time - lastObstacleSpawnTime >= OBSTACLE_SPAWN_INTERVAL) {
-            addObstacle(time, d.height);
-            addCounter(time);
-            lastObstacleSpawnTime = time;
-        }
-
-        manageObstacles(time, d);
-        manageCounters(time, d);
     }
 
     private void manageObstacles(int time, final Dimension d) {
@@ -413,6 +432,16 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         updater.start();
     }
 
+    private void unPause() throws InterruptedException {
+        Dimension d = getSize();
+
+        gameOver = false;
+        once = true;
+        pause = false;
+
+        updater.wait();
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
         // this event triggers when we release a key and then
@@ -441,14 +470,18 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             sound.playSound("/jump.wav");
         }
 
-        if(!inputname && kc == KeyEvent.VK_ENTER) {
+        if(!showMenu && kc == KeyEvent.VK_ENTER) {
             gameStarted = true;
+            pause = true;
+
         }
 
         if (kc == KeyEvent.VK_SPACE && gameStarted) {
             jumpHeight = -7;
             sound.playSound("/jump.wav");
+            pause = false;
         }
+
     }
 
     @Override
@@ -478,9 +511,20 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         final int kc = e.getKeyCode();
         char key = e.getKeyChar();
         Boolean b1 = Character.isLetter(key);
+        Boolean b2 = Character.isDigit(key);
 
         if(!gameStarted && b1) {
             playerName = playerName + e.getKeyChar();
+            if(playerName.length()>20){
+                playerName = playerName.substring(0, playerName.length() - 1);
+            }
+            return;
+        }
+        if(!gameStarted && b2) {
+            playerName = playerName + e.getKeyChar();
+            if(playerName.length()>20){
+                playerName = playerName.substring(0, playerName.length() - 1);
+            }
             return;
         }
         if(!gameStarted && kc == KeyEvent.VK_BACK_SPACE){

@@ -27,7 +27,11 @@ public class FrameUpdater extends Thread {
             
             // notify the update method how many milliseconds have elapsed
             // since we started this loop
-            surface.update((int)((currentTime - startTime) / 1_000_000));
+            try {
+                surface.update((int)((currentTime - startTime) / 1_000_000));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
             // this could end up running at the same time as the
             // update() method above, which could lead to some
