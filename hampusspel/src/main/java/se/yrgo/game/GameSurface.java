@@ -2,6 +2,7 @@ package se.yrgo.game;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -52,7 +53,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private BufferedImage background;
     private BufferedImage nameBackground;
     private BufferedImage gameOverBackground;
-    private boolean inputname=false;
+    private boolean inputname = false;
     private String playerName = "";
     private File highScoreFile = new File("src\\main\\resources\\highscore.txt");
 
@@ -68,7 +69,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private static final int OBSTACLE_SPAWN_INTERVAL = 2500;
 
     public GameSurface(final int width) {
-        try{
+        try {
             highScoreFile.createNewFile();
 
         } catch (IOException e) {
@@ -105,24 +106,24 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             logger.log(Level.WARNING, "Unable to load image resource: /background.jpg", ex);
         }
 
-        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/witch_name.png")) {
+        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/witch_name2.png")) {
             if (spriteStream == null) {
-                logger.log(Level.WARNING, "Unable to load image resource: /witch_name.png");
+                logger.log(Level.WARNING, "Unable to load image resource: /witch_name2.png");
             } else {
                 this.nameBackground = ImageIO.read(spriteStream);
             }
         } catch (IOException ex) {
-            logger.log(Level.WARNING, "Unable to load image resource: /witch_name.png", ex);
+            logger.log(Level.WARNING, "Unable to load image resource: /witch_name.png2", ex);
         }
 
-        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/gameover.png")) {
+        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/gameover2.png")) {
             if (spriteStream == null) {
-                logger.log(Level.WARNING, "Unable to load image resource: /gameover.png");
+                logger.log(Level.WARNING, "Unable to load image resource: /gameover2.png");
             } else {
                 this.gameOverBackground = ImageIO.read(spriteStream);
             }
         } catch (IOException ex) {
-            logger.log(Level.WARNING, "Unable to load image resource: /gameover.png", ex);
+            logger.log(Level.WARNING, "Unable to load image resource: /gameover2.png", ex);
         }
 
         this.gameOver = false;
@@ -160,7 +161,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private void drawSurface(Graphics2D g) throws InterruptedException {
         final Dimension d = this.getSize();
 
-
         if (showMenu) {
             g.setColor(Color.BLACK);
             g.fillRect(0, 0, d.width, d.height);
@@ -181,8 +181,8 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             int newLine = g.getFont().getSize() + 5;
             int y = 100;
             g.drawString("High Score:", 25, y);
-            for(int i=0;i<highscore.size();i++){
-                if(i<10) {
+            for (int i = 0; i < highscore.size(); i++) {
+                if (i < 10) {
                     Player player = highscore.get(i);
                     g.drawString((i + 1) + " - " + player.name + " : " + player.score, 25, y += newLine);
                 }
@@ -190,7 +190,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             return;
         }
 
-        if(!showMenu && !gameStarted){
+        if (!showMenu && !gameStarted) {
             g.drawImage(nameBackground, 0, 0, null);
             g.drawImage(nameBackground, 1472, 0, null);
             g.setFont(new Font("Old English Text MT", Font.BOLD, 24));
@@ -219,11 +219,11 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             g.drawString("Game over!", 475, 150);
             g.setFont(new Font("Old English Text MT", Font.PLAIN, 50));
             g.setFont(new Font("Book Antiqua", Font.PLAIN, 40));
-            int y= 220;
+            int y = 220;
             int newLine = g.getFont().getSize() + 10;
             g.drawString("High Score:", 595, y);
-            for(int i=0;i<highscore.size();i++){
-                if(i<10) {
+            for (int i = 0; i < highscore.size(); i++) {
+                if (i < 10) {
                     Player player = highscore.get(i);
                     g.drawString((i + 1) + " - " + player.name + " : " + player.score, 550, y += newLine);
                 }
@@ -231,50 +231,60 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             return;
         }
 
-
-
         g.drawImage(background, 0, 0, null);
         g.drawImage(background, 1472, 0, null);
-
-
 
         // draw the pipe
         for (Obstacle obstacle : obstacles) {
             drawObstacle(g, obstacle);
         }
 
-
-
         // draw the bird
         if (playerImageSprite != null) {
             int offset = 85 * playerImageSpriteCount;
-            g.drawImage(
-                    playerImageSprite,
-                    player.x,
-                    player.y,
-                    player.x + playerWidth,
-                    player.y + playerHeight,
-                    offset,
-                    0,
-                    offset + playerWidth, playerHeight,
-                    null);
+
+            // Calculate rotation based on vertical speed (jumpHeight in your case)
+            double clampedVelocity = Math.max(-5, Math.min(5, jumpHeight));
+            double angle = Math.toRadians(clampedVelocity * 5); // tweak multiplier for feel
+
+            AffineTransform old = g.getTransform();
+
+            try {
+                // Rotate around the center of the player
+                g.rotate(angle,
+                        player.x + playerWidth / 2.0,
+                        player.y + playerHeight / 2.0);
+
+                // Draw the sprite (same as before)
+                g.drawImage(
+                        playerImageSprite,
+                        player.x,
+                        player.y,
+                        player.x + playerWidth,
+                        player.y + playerHeight,
+                        offset,
+                        0,
+                        offset + playerWidth,
+                        playerHeight,
+                        null);
+            } finally {
+                // Always reset transform
+                g.setTransform(old);
+            }
         }
 
-        if(pause){
+        if (pause) {
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 36));
             g.drawString("Press SPACE to jump!", 600, 300);
         }
 
         // draw the score
-        if(!pause){
+        if (!pause) {
             drawScore(g, d, false);
         }
-
-
-
-
     }
+
     private void drawObstacle(Graphics2D g, Obstacle obstacle) {
         g.drawImage(obstacleImageSprite,
                 obstacle.bounds.x,
@@ -286,7 +296,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
     private void drawScore(Graphics2D g, Dimension d, boolean gameOverBackground) {
         final String scoreText = String.valueOf(score / 20);
-        final Font scoreFont = new Font("Monospaced", Font.BOLD, 100);
+        final Font scoreFont = new Font("Old English Text MT", Font.BOLD, 100);
 
         g.setFont(scoreFont);
         FontMetrics metrics = g.getFontMetrics(scoreFont);
@@ -314,7 +324,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         if (!gameStarted) {
             return;
         }
-        if(!pause){
+        if (!pause) {
             jumpHeight += gravity;
             player.y += jumpHeight;
 
@@ -349,7 +359,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             manageCounters(time, d);
 
         }
-
 
     }
 
@@ -447,18 +456,16 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         // this event triggers when we release a key and then
         // we will move the space ship if the game is not over yet
 
-
-
         final int kc = e.getKeyCode();
 
         if (kc == KeyEvent.VK_ESCAPE) {
-             System.exit(0);
-}
+            System.exit(0);
+        }
         char key = e.getKeyChar();
-        //if(!inputname && kc != KeyEvent.VK_SPACE) {
-        //playerName = playerName + e.getKeyChar();
-        //return;
-        //}
+        // if(!inputname && kc != KeyEvent.VK_SPACE) {
+        // playerName = playerName + e.getKeyChar();
+        // return;
+        // }
 
         if (gameOver && kc == KeyEvent.VK_SPACE) {
             restartGame();
@@ -470,10 +477,9 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             sound.playSound("/jump.wav");
         }
 
-        if(!showMenu && kc == KeyEvent.VK_ENTER) {
+        if (!showMenu && kc == KeyEvent.VK_ENTER) {
             gameStarted = true;
             pause = true;
-
         }
 
         if (kc == KeyEvent.VK_SPACE && gameStarted) {
@@ -481,13 +487,10 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             sound.playSound("/jump.wav");
             pause = false;
         }
-
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-
-
 
         final int b = e.getButton();
 
@@ -513,22 +516,22 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         Boolean b1 = Character.isLetter(key);
         Boolean b2 = Character.isDigit(key);
 
-        if(!gameStarted && b1) {
+        if (!gameStarted && b1) {
             playerName = playerName + e.getKeyChar();
-            if(playerName.length()>20){
+            if (playerName.length() > 20) {
                 playerName = playerName.substring(0, playerName.length() - 1);
             }
             return;
         }
-        if(!gameStarted && b2) {
+        if (!gameStarted && b2) {
             playerName = playerName + e.getKeyChar();
-            if(playerName.length()>20){
+            if (playerName.length() > 20) {
                 playerName = playerName.substring(0, playerName.length() - 1);
             }
             return;
         }
-        if(!gameStarted && kc == KeyEvent.VK_BACK_SPACE){
-            if(playerName != null){
+        if (!gameStarted && kc == KeyEvent.VK_BACK_SPACE) {
+            if (playerName != null) {
                 playerName = playerName.substring(0, playerName.length() - 1);
             }
         }
@@ -554,5 +557,4 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     public void mouseExited(MouseEvent e) {
         // do nothing
     }
-
 }
