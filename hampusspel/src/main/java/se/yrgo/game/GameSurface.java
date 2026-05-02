@@ -86,14 +86,14 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         } catch (IOException ex) {
             logger.log(Level.WARNING, "Unable to load image resource: /birb.png", ex);
         }
-        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/tree.png")) {
+        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/tree2.png")) {
             if (spriteStream == null) {
-                logger.log(Level.WARNING, "Unable to load image resource: /tree.png");
+                logger.log(Level.WARNING, "Unable to load image resource: /tree2.png");
             } else {
                 this.obstacleImageSprite = ImageIO.read(spriteStream);
             }
         } catch (IOException ex) {
-            logger.log(Level.WARNING, "Unable to load image resource: /tree.png", ex);
+            logger.log(Level.WARNING, "Unable to load image resource: /tree2.png", ex);
         }
 
         try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/forest.jpg")) {
@@ -409,7 +409,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         obstacles.add(new Obstacle(newTime, FAR_OFFSCREEN, y1));
 
         // and the lower one
-        int y2 = y1 + 800;
+        int y2 = y1 + 850;
         obstacles.add(new Obstacle(newTime, FAR_OFFSCREEN, y2));
     }
 
