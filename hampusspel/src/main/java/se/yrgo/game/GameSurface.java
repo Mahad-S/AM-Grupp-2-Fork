@@ -243,19 +243,16 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         if (playerImageSprite != null) {
             int offset = 85 * playerImageSpriteCount;
 
-            // Calculate rotation based on vertical speed (jumpHeight in your case)
             double clampedVelocity = Math.max(-5, Math.min(5, jumpHeight));
-            double angle = Math.toRadians(clampedVelocity * 5); // tweak multiplier for feel
+            double angle = Math.toRadians(clampedVelocity * 3); // tweak multiplier for feel
 
             AffineTransform old = g.getTransform();
 
             try {
-                // Rotate around the center of the player
                 g.rotate(angle,
                         player.x + playerWidth / 2.0,
                         player.y + playerHeight / 2.0);
 
-                // Draw the sprite (same as before)
                 g.drawImage(
                         playerImageSprite,
                         player.x,
@@ -268,7 +265,6 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
                         playerHeight,
                         null);
             } finally {
-                // Always reset transform
                 g.setTransform(old);
             }
         }
