@@ -612,10 +612,9 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             restartGame();
         }
 
-        if (!gameStarted && kc == KeyEvent.VK_SPACE) {
+        if (!gameStarted && showMenu && kc == KeyEvent.VK_SPACE) {
             showMenu = false;
-            jumpHeight = -7;
-            sound.playSound("/jump.wav");
+            playerName = "";
         }
 
         if (!showMenu && kc == KeyEvent.VK_ENTER) {
