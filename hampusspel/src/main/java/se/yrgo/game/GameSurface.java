@@ -27,7 +27,7 @@ import javax.swing.*;
  *
  */
 public class GameSurface extends JPanel implements KeyListener, MouseListener {
-    enum difficulty{
+    enum difficulty {
         EASY,
         MEDIUM,
         HARD
@@ -58,6 +58,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private transient BufferedImage obstacleImageSprite;
     private int playerImageSpriteCount;
     private BufferedImage background;
+    private BufferedImage menuBackground;
     private BufferedImage nameBackground;
     private BufferedImage gameOverBackground;
     private boolean inputname = false;
@@ -80,6 +81,15 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
     private int distance;
 
     public GameSurface(final int width) {
+        try (InputStream spriteStream = GameSurface.class.getResourceAsStream("/menu_background.png")) {
+            if (spriteStream != null) {
+                this.menuBackground = ImageIO.read(spriteStream);
+            } else {
+                logger.log(Level.WARNING, "Unable to load image resource: /menu_background.png");
+            }
+        } catch (IOException ex) {
+            logger.log(Level.WARNING, "Unable to load image resource: /menu_background.png", ex);
+        }
         try {
             highScoreFileEasy.createNewFile();
             highScoreFileMedium.createNewFile();
@@ -180,28 +190,43 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         final Dimension d = this.getSize();
 
         if (showMenu) {
-            g.setColor(Color.BLACK);
-            g.fillRect(0, 0, d.width, d.height);
+            if (menuBackground != null) {
+                g.drawImage(menuBackground, 0, 0, d.width, d.height, null);
+            }
 
-            g.setColor(Color.WHITE);
-            g.fillRect(400, 200, 500, 150);
+            String title = "jumpy Witch";
 
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Arial", Font.BOLD, 80));
-            g.drawString("jumpy Witch", 420, 300);
+            g.setFont(new Font("SansSerif", Font.BOLD, 90));
 
-            g.setColor(Color.WHITE);
+            // glow layer
+            for (int i = 10; i > 0; i--) {
+                g.setColor(new Color(0, 0, 0, 20));
+                g.drawString(title, 420 - i, 300 - i);
+            }
+
+            g.setColor(Color.darkGray);
+            g.drawString(title, 420, 300);
+
+            g.setColor(Color.white);
+            g.setFont(new Font("Cinzel", Font.BOLD, 30));
+            g.drawString("Press SPACE to Start", 520, 550);
+
             g.setFont(new Font("Arial", Font.BOLD, 40));
-            g.drawString("Press SPACE to Start", 450, 550);
-
-            g.setFont(new Font("Arial", Font.BOLD, 40));
-            g.setColor(Color.WHITE);
+            g.setColor(Color.darkGray);
             int newLine = g.getFont().getSize() + 5;
+            int highScoreValue = 0;
             int y = 100;
+
+            String bestPlayer = null;
+            
+            if (!highscoreMedium.isEmpty()) {
+                bestPlayer = highscoreMedium.keySet().iterator().next();
+                highScoreValue = highscoreMedium.get(bestPlayer);
+            }
             g.drawString("High Score:", 25, y);
             int i = 0;
-            for(String k : highscoreMedium.keySet()){
-                if(i<10){
+            for (String k : highscoreMedium.keySet()) {
+                if (i < 10) {
                     g.drawString((i + 1) + " - " + k + " : " + highscoreMedium.get(k), 25, y += newLine);
                     i += 1;
                 }
@@ -219,7 +244,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             super.repaint();
             return;
         }
-        if(!showMenu && difficultySelector && !gameStarted){
+        if (!showMenu && difficultySelector && !gameStarted) {
             g.drawImage(gameOverBackground, 0, 0, null);
             g.drawImage(gameOverBackground, 1472, 0, null);
             g.setColor(Color.white);
@@ -236,45 +261,46 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         if (gameOver) {
             Thread.sleep(50);
             if (once) {
-                if(myDifficulty == difficulty.EASY){
-                    if(!highscoreEasy.containsKey(playerName)){
-                        highscoreEasy.put(playerName, score/20);
+                if (myDifficulty == difficulty.EASY) {
+                    if (!highscoreEasy.containsKey(playerName)) {
+                        highscoreEasy.put(playerName, score / 20);
                         highscoreEasy = archive.sortScores(highscoreEasy);
                         archive.saveScore(highscoreEasy, "highscore_easy.txt");
                         once = false;
-                    } else if (highscoreEasy.containsKey(playerName) && highscoreEasy.get(playerName) < score/20) {
+                    } else if (highscoreEasy.containsKey(playerName) && highscoreEasy.get(playerName) < score / 20) {
                         highscoreEasy.remove(playerName);
-                        highscoreEasy.put(playerName, score/20);
+                        highscoreEasy.put(playerName, score / 20);
                         highscoreEasy = archive.sortScores(highscoreEasy);
                         archive.saveScore(highscoreEasy, "highscore_easy.txt");
                         once = false;
                     }
 
                 }
-                if(myDifficulty == difficulty.MEDIUM){
-                    if(!highscoreMedium.containsKey(playerName)){
-                        highscoreMedium.put(playerName, score/20);
+                if (myDifficulty == difficulty.MEDIUM) {
+                    if (!highscoreMedium.containsKey(playerName)) {
+                        highscoreMedium.put(playerName, score / 20);
                         highscoreMedium = archive.sortScores(highscoreMedium);
                         archive.saveScore(highscoreMedium, "highscore_medium.txt");
                         once = false;
-                    } else if (highscoreMedium.containsKey(playerName) && highscoreMedium.get(playerName) < score/20) {
+                    } else if (highscoreMedium.containsKey(playerName)
+                            && highscoreMedium.get(playerName) < score / 20) {
                         highscoreMedium.remove(playerName);
-                        highscoreMedium.put(playerName, score/20);
+                        highscoreMedium.put(playerName, score / 20);
                         highscoreMedium = archive.sortScores(highscoreMedium);
                         archive.saveScore(highscoreMedium, "highscore_medium.txt");
                         once = false;
                     }
 
                 }
-                if(myDifficulty == difficulty.HARD){
-                    if(!highscoreHard.containsKey(playerName)){
-                        highscoreHard.put(playerName, score/20);
+                if (myDifficulty == difficulty.HARD) {
+                    if (!highscoreHard.containsKey(playerName)) {
+                        highscoreHard.put(playerName, score / 20);
                         highscoreHard = archive.sortScores(highscoreHard);
                         archive.saveScore(highscoreHard, "highscore_hard.txt");
                         once = false;
-                    } else if (highscoreHard.containsKey(playerName) && highscoreHard.get(playerName) < score/20) {
+                    } else if (highscoreHard.containsKey(playerName) && highscoreHard.get(playerName) < score / 20) {
                         highscoreHard.remove(playerName);
-                        highscoreHard.put(playerName, score/20);
+                        highscoreHard.put(playerName, score / 20);
                         highscoreHard = archive.sortScores(highscoreHard);
                         archive.saveScore(highscoreHard, "highscore_hard.txt");
                         once = false;
@@ -292,15 +318,15 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             g.setColor(Color.white);
             g.setFont(new Font("Old English Text MT", Font.PLAIN, 100));
             g.drawString("Game over!", 475, 150);
-            if(myDifficulty == difficulty.EASY){
+            if (myDifficulty == difficulty.EASY) {
                 g.setFont(new Font("Old English Text MT", Font.PLAIN, 40));
                 int y = 220;
                 int newLine = g.getFont().getSize() + 10;
                 g.drawString("High Score - easy difficulty:", 420, y);
                 g.setFont(new Font("Old English Text MT", Font.PLAIN, 30));
                 int i = 0;
-                for(String k : highscoreEasy.keySet()){
-                    if(i<10){
+                for (String k : highscoreEasy.keySet()) {
+                    if (i < 10) {
                         g.drawString((i + 1) + " - " + k + " : " + highscoreEasy.get(k), 580, y += newLine);
                         i += 1;
                     }
@@ -313,15 +339,14 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
                 g.drawString("High Score - medium difficulty:", 420, y);
                 g.setFont(new Font("Old English Text MT", Font.PLAIN, 30));
                 int i = 0;
-                for(String k : highscoreMedium.keySet()){
-                    if(i<10){
+                for (String k : highscoreMedium.keySet()) {
+                    if (i < 10) {
                         g.drawString((i + 1) + " - " + k + " : " + highscoreMedium.get(k), 580, y += newLine);
                         i += 1;
                     }
                 }
 
-            }
-            else if (myDifficulty == difficulty.HARD) {
+            } else if (myDifficulty == difficulty.HARD) {
                 g.setFont(new Font("Old English Text MT", Font.PLAIN, 40));
                 ;
                 int y = 220;
@@ -329,8 +354,8 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
                 g.drawString("High Score - hard difficulty:", 420, y);
                 g.setFont(new Font("Old English Text MT", Font.PLAIN, 30));
                 int i = 0;
-                for(String k : highscoreHard.keySet()){
-                    if(i<10){
+                for (String k : highscoreHard.keySet()) {
+                    if (i < 10) {
                         g.drawString((i + 1) + " - " + k + " : " + highscoreHard.get(k), 580, y += newLine);
                         i += 1;
                     }
@@ -338,11 +363,12 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
             }
             g.setFont(new Font("Book Antiqua", Font.PLAIN, 30));
-            g.drawString("Press SPACE to try again, ENTER to return to the main menu or D to change difficulty.", 150, 750);
+            g.drawString("Press SPACE to try again, ENTER to return to the main menu or D to change difficulty.", 150,
+                    750);
 
             return;
         }
-        if(myDifficulty == difficulty.EASY){
+        if (myDifficulty == difficulty.EASY) {
             gravity = 0.2;
             OBSTACLE_SPAWN_INTERVAL = 3000;
             distance = 900;
@@ -350,8 +376,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             gravity = 0.3;
             OBSTACLE_SPAWN_INTERVAL = 2500;
             distance = 850;
-        }
-        else if(myDifficulty == difficulty.HARD){
+        } else if (myDifficulty == difficulty.HARD) {
             gravity = 0.4;
             OBSTACLE_SPAWN_INTERVAL = 2000;
             distance = 800;
@@ -592,7 +617,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
         if (gameOver && kc == KeyEvent.VK_SPACE) {
             restartGame();
         }
-        if(gameOver && kc == KeyEvent.VK_ENTER) {
+        if (gameOver && kc == KeyEvent.VK_ENTER) {
             this.gameOver = false;
             this.gameStarted = false;
             this.once = true;
@@ -601,7 +626,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             restartGame();
 
         }
-        if(gameOver && kc == KeyEvent.VK_D){
+        if (gameOver && kc == KeyEvent.VK_D) {
             this.gameOver = false;
             this.gameStarted = false;
             this.once = true;
@@ -621,7 +646,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
             difficultySelector = true;
         }
 
-        if(!showMenu && difficultySelector && kc == KeyEvent.VK_1){
+        if (!showMenu && difficultySelector && kc == KeyEvent.VK_1) {
             myDifficulty = difficulty.EASY;
             difficultySelector = false;
             gameStarted = true;
@@ -629,7 +654,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
         }
 
-        if(!showMenu && difficultySelector && kc == KeyEvent.VK_2){
+        if (!showMenu && difficultySelector && kc == KeyEvent.VK_2) {
             myDifficulty = difficulty.MEDIUM;
             difficultySelector = false;
             gameStarted = true;
@@ -637,7 +662,7 @@ public class GameSurface extends JPanel implements KeyListener, MouseListener {
 
         }
 
-        if(!showMenu && difficultySelector && kc == KeyEvent.VK_3){
+        if (!showMenu && difficultySelector && kc == KeyEvent.VK_3) {
             myDifficulty = difficulty.HARD;
             difficultySelector = false;
             gameStarted = true;
